@@ -8,6 +8,10 @@ IPv4 only. Sorry.
 ```bash
 ./blacklist_filter.py -f blacklist.txt < access.log
 ```
-The script might spend a lot of time computing the filtering table when using
-large ranges. It will generate a `.cached.json` cache file to avoid recomputing
-it. If you change the blacklist, delete the cache file.
+
+You can specify a cache file to avoid recomputing the blacklist. If it exists
+already, it will be used **instead** of the blacklist file if given.
+
+```bash
+./blacklist_filter.py -f blacklist.txt -c .cached.json < access.log
+```
