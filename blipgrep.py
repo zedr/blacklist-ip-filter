@@ -5,7 +5,7 @@ import sys
 import json
 import argparse
 from pathlib import Path
-from typing import List, TextIO, Optional, Generator
+from typing import List, Optional, Generator
 
 import ipcalc
 
@@ -60,7 +60,7 @@ class Matrix:
     @property
     def is_empty(self) -> bool:
         """Is the Matrix devoid of any ip?"""
-        return any(self._arr) == False
+        return not any(self._arr)
 
     @staticmethod
     def check_arr(arr: FlatMatrix) -> None:
