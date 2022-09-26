@@ -6,7 +6,7 @@ IPv4 only. Sorry.
 
 ## Usage
 ```bash
-./blacklist_filter.py -b blacklist.txt < access.log
+./blacklist_filter.py -f blacklist.txt < access.log
 ```
 The script might spend a lot of time computing the filtering table when using
 large ranges. It will generate a `.cached.json` cache file to avoid recomputing
