@@ -4,13 +4,15 @@ import re
 import sys
 import json
 import argparse
-from typing import List, TextIO, Optional
+from typing import List, TextIO, Optional, Generator
 
 import ipcalc
 
 ip_rxp = re.compile(r"^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})")
 
 OCTET_SIZE = 256
+
+IpAddress = tuple[int, int, int, int]
 
 
 class Matrix:
@@ -20,34 +22,34 @@ class Matrix:
     def add(self, a: int, b: int, c: int, d: int) -> None:
         self._arr[a] = True
         self._arr[b + OCTET_SIZE] = True
-        self._arr[c + OCTET_SIZE + OCTET_SIZE] = True
-        self._arr[d + OCTET_SIZE + OCTET_SIZE + OCTET_SIZE] = True
+        self._arr[c + OCTET_SIZE * 2] = True
+        self._arr[d + OCTET_SIZE * 3] = True
 
     def test(self, a: int, b: int, c: int, d: int) -> bool:
         if self._arr[a]:
             if self._arr[b + OCTET_SIZE]:
-                if self._arr[c + OCTET_SIZE + OCTET_SIZE]:
-                    if self._arr[d + OCTET_SIZE + OCTET_SIZE + OCTET_SIZE]:
+                if self._arr[c + OCTET_SIZE * 2]:
+                    if self._arr[d + OCTET_SIZE * 3]:
                         return True
         return False
 
-    def __contains__(self, item: tuple[int, int, int, int]) -> bool:
+    def __contains__(self, item: IpAddress) -> bool:
         return self.test(*item)
+
+
+def get_ipv4_seq(ipv4_range: str) -> Generator[IpAddress, None, None]:
+    """Get a sequence of IPv4 addresses"""
+    for ipv4_address in ipcalc.Network(ipv4_range):
+        matched = ip_rxp.search(str(ipv4_address))
+        yield tuple(int(num) for num in matched.groups())
 
 
 def generate_matrix(fd: TextIO):
     matrix = Matrix()
     for line in fd:
         if not line.startswith("#"):
-            for ip in ipcalc.Network(line.strip()):
-                try:
-                    a, b, c, d = [
-                        int(num) for num in ip_rxp.search(str(ip)).groups()
-                    ]
-                except TypeError:
-                    raise ValueError(ip)
-                else:
-                    matrix.add(a, b, c, d)
+            for ipv4_address in get_ipv4_seq(line.strip()):
+                matrix.add(*ipv4_address)
     return matrix
 
 
