@@ -7,10 +7,10 @@ import argparse
 from pathlib import Path
 from typing import List, Optional, Generator
 
-import ipcalc
+import ipcalc  # type: ignore
 
 IpAddress = tuple[int, int, int, int]
-FlatMatrix = List[Optional[bool]]
+FlatMatrix = List[bool]
 
 ip_rxp = re.compile(r"^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})")
 
@@ -30,7 +30,11 @@ class Matrix:
     """An object that search rapidly inside its list of IP addresses"""
 
     def __init__(self, _arr: Optional[FlatMatrix] = None):
-        self._arr = [False] * FLAT_MATRIX_LENGTH if _arr is None else _arr
+        if _arr is None:
+            self._arr = [False] * FLAT_MATRIX_LENGTH
+        else:
+            self.check_arr(_arr)
+            self._arr = _arr
 
     def add(self, a: int, b: int, c: int, d: int) -> None:
         """Add an IPv4 address using the given octets"""
@@ -78,7 +82,9 @@ def get_ipv4_seq(ipv4_range: str) -> Generator[IpAddress, None, None]:
     """Get a sequence of IPv4 addresses"""
     for ipv4_address in ipcalc.Network(ipv4_range):
         matched = ip_rxp.search(str(ipv4_address))
-        yield tuple(int(num) for num in matched.groups())
+        if matched:
+            a, b, c, d = matched.groups()
+            yield (int(a), int(b), int(c), int(d))
 
 
 def main():
