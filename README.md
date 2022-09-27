@@ -4,14 +4,20 @@ given blacklist containing CIDR ranges.
 
 IPv4 only. Sorry.
 
+## Install
+```bash
+pip install -r requirements.txt
+pip install -e .
+```
+
 ## Usage
 ```bash
-./blacklist_filter.py -f blacklist.txt < access.log
+blipgrep -f blacklist.txt < access.log
 ```
 
 You can specify a cache file to avoid recomputing the blacklist. If it exists
 already, it will be used **instead** of the blacklist file if given.
 
 ```bash
-./blacklist_filter.py -f blacklist.txt -c .cached.json < access.log
+blipgrep -f blacklist.txt -c .cached.json < access.log
 ```
