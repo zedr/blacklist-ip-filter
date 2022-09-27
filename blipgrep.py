@@ -14,9 +14,9 @@ FlatMatrix = List[bool]
 
 ip_rxp = re.compile(r"^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})")
 
-OCTET_SIZE = 256
-_OS2 = OCTET_SIZE * 2
-_OS3 = OCTET_SIZE * 3
+OCTET_2_OFFSET = OCTET_SIZE = 256
+OCTET_3_OFFSET = OCTET_SIZE * 2
+OCTET_4_OFFSET = OCTET_SIZE * 3
 FLAT_MATRIX_LENGTH = OCTET_SIZE * 4
 
 
@@ -42,17 +42,17 @@ class Matrix:
         """Add an IPv4 address using the given octets"""
         arr = self._arr
         arr[a] = True
-        arr[b + OCTET_SIZE] = True
-        arr[c + _OS2] = True
-        arr[d + _OS3] = True
+        arr[b + OCTET_2_OFFSET] = True
+        arr[c + OCTET_3_OFFSET] = True
+        arr[d + OCTET_4_OFFSET] = True
 
     def contains(self, a: int, b: int, c: int, d: int) -> bool:
         """Check an IPv4 address using the given octets"""
         arr = self._arr
         if arr[a]:
-            if arr[b + OCTET_SIZE]:
-                if arr[c + _OS2]:
-                    if arr[d + _OS3]:
+            if arr[b + OCTET_2_OFFSET]:
+                if arr[c + OCTET_3_OFFSET]:
+                    if arr[d + OCTET_4_OFFSET]:
                         return True
         return False
 
