@@ -2,3 +2,5 @@
 *.log
 blacklist.txt
 .cached.json
+
+gen.py

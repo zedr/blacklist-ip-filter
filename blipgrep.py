@@ -5,7 +5,7 @@ import sys
 import json
 import argparse
 from pathlib import Path
-from typing import List, Optional, Generator
+from typing import List, Optional, Generator, TextIO
 
 import ipcalc  # type: ignore
 
@@ -15,6 +15,8 @@ FlatMatrix = List[bool]
 ip_rxp = re.compile(r"^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})")
 
 OCTET_SIZE = 256
+_OS2 = OCTET_SIZE * 2
+_OS3 = OCTET_SIZE * 3
 FLAT_MATRIX_LENGTH = OCTET_SIZE * 4
 
 
@@ -41,16 +43,16 @@ class Matrix:
         arr = self._arr
         arr[a] = True
         arr[b + OCTET_SIZE] = True
-        arr[c + OCTET_SIZE * 2] = True
-        arr[d + OCTET_SIZE * 3] = True
+        arr[c + _OS2] = True
+        arr[d + _OS3] = True
 
     def contains(self, a: int, b: int, c: int, d: int) -> bool:
         """Check an IPv4 address using the given octets"""
         arr = self._arr
         if arr[a]:
             if arr[b + OCTET_SIZE]:
-                if arr[c + OCTET_SIZE * 2]:
-                    if arr[d + OCTET_SIZE * 3]:
+                if arr[c + _OS2]:
+                    if arr[d + _OS3]:
                         return True
         return False
 
@@ -65,6 +67,13 @@ class Matrix:
     def is_empty(self) -> bool:
         """Is the Matrix devoid of any ip?"""
         return not any(self._arr)
+
+    def populate_from(self, fd: TextIO) -> None:
+        """Populate this matrix from a blacklist file"""
+        for line in (line_.strip() for line_ in fd):
+            if not line.startswith("#"):
+                for ipv4_address in get_ipv4_seq(line):
+                    self.add(*ipv4_address)
 
     @staticmethod
     def check_arr(arr: FlatMatrix) -> None:
@@ -85,6 +94,18 @@ def get_ipv4_seq(ipv4_range: str) -> Generator[IpAddress, None, None]:
         if matched:
             a, b, c, d = matched.groups()
             yield (int(a), int(b), int(c), int(d))
+
+
+def grep(fd: TextIO, matrix: Matrix) -> Generator[str, None, None]:
+    """Grep an access log file using the given matrix"""
+    for line in fd.readlines():
+        match = ip_rxp.search(line)
+        if match:
+            a, b, c, d = match.groups()
+            octet = (int(a), int(b), int(c), int(d))
+            # if octet in matrix:
+            if matrix.contains(*octet):
+                yield line
 
 
 def main():
@@ -121,23 +142,15 @@ def main():
     if cache_exists:
         with open(args.cache) as fd:
             arr = json.load(fd)
-        matrix = Matrix(_arr=arr)
+            matrix = Matrix(_arr=arr)
     elif args.file:
         with open(args.file) as fd:
-            for line in (line_.strip() for line_ in fd):
-                if not line.startswith("#"):
-                    for ipv4_address in get_ipv4_seq(line):
-                        matrix.add(*ipv4_address)
+            matrix.populate_from(fd)
         with open(args.cache, "w") as fd:
             json.dump(matrix.serialize(), fd)
 
-    for line in sys.stdin.readlines():
-        match = ip_rxp.search(line)
-        if match:
-            a, b, c, d = match.groups()
-            octet = (int(a), int(b), int(c), int(d))
-            if octet not in matrix:
-                print(line, end="")
+    for line in grep(sys.stdin, matrix):
+        print(line, end="")
 
 
 if __name__ == '__main__':
